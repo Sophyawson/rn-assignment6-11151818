@@ -1,20 +1,35 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { NavigationContainer } from "@react-navigation/native";
+ import { createNativeStackNavigator } from "@react-navigation/native-stack";
+ import { SafeAreaProvider } from "react-native-safe-area-context";
 
-export default function App() {
+ import HomeScreen from "./src/components/HomeScreen";
+ import CartScreen from "./src/components/CartScreen";
+
+const Stack = createNativeStackNavigator();
+
+
+const App = () => {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <SafeAreaProvider>
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="HomeScreen">
+        <Stack.Screen
+          options={{ headerShown: false }}
+          name="HomeScreen"
+          component={HomeScreen}
+        />
+        <Stack.Screen
+          options={{ headerShown: false }}
+          name="CartScreen"
+          component={CartScreen}
+        />
+        
+      </Stack.Navigator>
+    </NavigationContainer>
+   
+    </SafeAreaProvider>
+    
   );
-}
+};
+export default App;
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
