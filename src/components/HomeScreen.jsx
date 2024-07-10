@@ -2,20 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { View, FlatList, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const PRODUCTS = [
-  { id: '1', name: 'Office Wear', description: 'reversible angora cardigan', price: 120, image: require('../../assets/dress1.png') },
-  { id: '2', name: 'Black', description: 'reversible angora cardigan', price: 120, image: require('../../assets/dress2.png') },
-  { id: '3', name: 'Church Wear', description: 'reversible angora cardigan', price: 120, image: require('../../assets/dress3.png') },
-  { id: '4', name: 'Lamerei', description: 'reversible angora cardigan', price: 120, image: require('../../assets/dress4.png') },
-  { id: '5', name: '21WN', description: 'reversible angora cardigan', price: 120, image: require('../../assets/dress5.png') },
-  { id: '6', name: 'Lopo', description: 'reversible angora cardigan', price: 120, image: require('../../assets/dress6.png') },
-  { id: '7', name: '21WN', description: 'reversible angora cardigan', price: 120, image: require('../../assets/dress7.png') },
-  { id: '8', name: 'Lame', description: 'reversible angora cardigan', price: 120, image: require('../../assets/dress1.png') },
-];
-
 const HomeScreen = ({ navigation }) => {
   const [cart, setCart] = useState([]);
-
+  const [products, setProducts] = useState([]);
+  
   useEffect(() => {
     const loadCart = async () => {
       const savedCart = await AsyncStorage.getItem('cart');
@@ -26,31 +16,56 @@ const HomeScreen = ({ navigation }) => {
     loadCart();
   }, []);
 
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch('https://fakestoreapi.com/products');
+      const data = await response.json();
+      setProducts(data);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
+  };
+
   const addToCart = async (product) => {
     const newCart = [...cart, product];
     setCart(newCart);
     await AsyncStorage.setItem('cart', JSON.stringify(newCart));
   };
+  
+  const truncateText = (text, maxLength) => {
+    if (text.length <= maxLength) {
+      return text;
+    }
+    return text.substr(0, maxLength) + '...';
+  };
 
   const renderItem = ({ item }) => (
-    <View style={styles.productContainer}>
-      <Image source={item.image} style={styles.productImage} />
-      <Text style={styles.productName}>{item.name}</Text>
-      <Text style={styles.productDescription}>{item.description}</Text>
-      <Text style={styles.productPrice}>${item.price}</Text>
-      <TouchableOpacity style={styles.addButton} onPress={() => addToCart(item)}>
-        <Image source={require('../../assets/add_circle.png')} style={styles.addCircle} />
-      </TouchableOpacity>
-    </View>
+    <TouchableOpacity onPress={() => navigation.navigate('Clothing', { product: item })}>
+      <View style={styles.productContainer}>
+        <Image source={{ uri: item.image }} style={styles.productImage} />
+        <TouchableOpacity style={styles.addButton} onPress={() => addToCart(item)}>
+          <Image source={require('../../assets/add_circle.png')} style={styles.addCircle} />
+        </TouchableOpacity>
+        <Text style={styles.productName}>{item.title}</Text>
+        <Text style={styles.productDescription}>{truncateText(item.description, 40)}</Text>
+        <Text style={styles.productPrice}>${item.price}</Text>
+      </View>
+    </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
       <View style={styles.topRow}>
-        <Image source={require('../../assets/Menu.png')} style={styles.menu} />
+        <TouchableOpacity onPress={() => navigation.openDrawer()}>
+          <Image source={require('../../assets/Menu.png')} style={styles.menu} />
+        </TouchableOpacity>
         <Image source={require('../../assets/Logo.png')} style={styles.logo} />
         <Image source={require('../../assets/Search.png')} style={styles.search} />
-        <TouchableOpacity onPress={() => navigation.navigate('CartScreen')}>
+        <TouchableOpacity onPress={() => navigation.navigate('Location')}>
           <Image source={require('../../assets/shoppingBag.png')} style={styles.bag} />
         </TouchableOpacity>
       </View>
@@ -64,8 +79,8 @@ const HomeScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
       <FlatList
-        data={PRODUCTS}
-        keyExtractor={(item) => item.id}
+        data={products}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         renderItem={renderItem}
         numColumns={2}
         contentContainerStyle={styles.flatList}
@@ -95,6 +110,8 @@ const styles = StyleSheet.create({
   },
   menu: {
     marginLeft: 5,
+    width: 24,
+    height: 24,
   },
   logo: {
     marginLeft: 90,
@@ -102,6 +119,10 @@ const styles = StyleSheet.create({
   search: {
     marginLeft: 70,
     marginRight: 10,
+  },
+  bag: {
+    width: 24,
+    height: 24,
   },
   ourStoryText: {
     fontSize: 25,
@@ -117,13 +138,16 @@ const styles = StyleSheet.create({
   productContainer: {
     padding: 5,
     position: 'relative',
+    width: 175,
   },
   productImage: {
+    width: 100,
+    height: 100,
     resizeMode: 'contain',
   },
   productName: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '400',
     marginVertical: 5,
   },
   productDescription: {
@@ -138,10 +162,13 @@ const styles = StyleSheet.create({
   },
   addButton: {
     position: 'absolute',
-    bottom: 95,
-    right: 12,
+    top: 80,
+    right: 10,
   },
-  addCircle: {},
+  addCircle: {
+    width: 24,
+    height: 24,
+  },
 });
 
 export default HomeScreen;

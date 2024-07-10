@@ -4,33 +4,59 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CartScreen = () => {
   const [cart, setCart] = useState([]);
+  const [products, setProducts] = useState([]);
 
   useEffect(() => {
     const loadCart = async () => {
       const savedCart = await AsyncStorage.getItem('cart');
       if (savedCart) {
-        setCart(JSON.parse(savedCart));
+        const cartItems = JSON.parse(savedCart);
+        setCart(cartItems);
+        fetchProductDetails(cartItems);
       }
     };
     loadCart();
   }, []);
 
+  const fetchProductDetails = async (cartItems) => {
+    try {
+      const productDetails = await Promise.all(
+        cartItems.map(async (item) => {
+          const response = await fetch(`https://fakestoreapi.com/products/${item.id}`);
+          const data = await response.json();
+          return { ...item, ...data };
+        })
+      );
+      setProducts(productDetails);
+    } catch (error) {
+      console.error('Error fetching product details:', error);
+    }
+  };
+
   const removeFromCart = async (productId) => {
     const newCart = cart.filter((item) => item.id !== productId);
     setCart(newCart);
     await AsyncStorage.setItem('cart', JSON.stringify(newCart));
+    setProducts(products.filter((product) => product.id !== productId));
   };
 
   const getTotal = () => {
-    return cart.reduce((total, item) => total + item.price, 0);
+    return products.reduce((total, item) => total + item.price, 0);
+  };
+
+  const truncateText = (text, maxLength) => {
+    if (text.length <= maxLength) {
+      return text;
+    }
+    return text.substr(0, maxLength) + '...';
   };
 
   const renderItem = ({ item }) => (
     <View style={styles.productContainer}>
-      <Image source={item.image} style={styles.productImage} />
+      <Image source={{ uri: item.image }} style={styles.productImage} />
       <View style={styles.productDetails}>
-        <Text style={styles.productName}>{item.name}</Text>
-        <Text style={styles.productDescription}>{item.description}</Text>
+        <Text style={styles.productName}>{item.title}</Text>
+        <Text style={styles.productDescription}>{truncateText(item.description, 40)}</Text>
         <Text style={styles.productPrice}>${item.price}</Text>
         <TouchableOpacity onPress={() => removeFromCart(item.id)} style={styles.removeButton}>
           <Image source={require('../../assets/remove.png')} style={styles.removeIcon} />
@@ -52,8 +78,8 @@ const CartScreen = () => {
         <View style={styles.line} />
       </View>
       <FlatList
-        data={cart}
-        keyExtractor={(item) => item.id}
+        data={products}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         renderItem={renderItem}
         contentContainerStyle={styles.flatList}
       />
@@ -127,8 +153,8 @@ const styles = StyleSheet.create({
     paddingRight: 50,
   },
   productImage: {
-    width: 70,
-    height: 100,
+    width: 90,
+    height: 110,
     marginRight: 10,
   },
   productDetails: {
